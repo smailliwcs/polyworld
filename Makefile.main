@@ -1,0 +1,9 @@
+MAIN_SOURCE = main/main.cp
+MAIN_OBJECT = $(OBJECTS_DIR)main.o
+MAIN_TARGET = $(OBJECTS_DIR)Polyworld.exe
+MAIN_LFLAGS = -fopenmp -mthreads
+MAIN_LIBS = $(LIBS) -L$(OBJECTS_DIR) -lPolyworld
+
+main: $(DESTDIR_TARGET) FORCE
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(MAIN_OBJECT) $(MAIN_SOURCE)
+	$(LINK) $(MAIN_LFLAGS) -o $(MAIN_TARGET) $(MAIN_OBJECT) $(MAIN_LIBS)
