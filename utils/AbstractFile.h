@@ -10,7 +10,8 @@ class AbstractFile
 	{
 		TYPE_UNDEFINED,
 		TYPE_FILE,
-		TYPE_GZIP_FILE
+		TYPE_GZIP_FILE,
+		TYPE_W32_LINK
 	};
 	enum ConcreteFileCapability
 	{

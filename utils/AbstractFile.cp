@@ -1,6 +1,7 @@
 #include "AbstractFile.h"
 
 #include <assert.h>
+#include <QFile>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,7 @@
 #include <sys/stat.h>
 
 #define GZIP_EXT ".gz"
+#define W32_LINK_EXT ".lnk"
 
 AbstractFile *AbstractFile::open( ConcreteFileType type,
 								  const char *abstractPath,
@@ -88,9 +90,13 @@ int AbstractFile::link( const char *oldAbstractPath,
 		if( found && !isAmbiguous )
 		{
 			char *oldpath = createPath( type, oldAbstractPath );
+#ifdef __WIN32__
+			char *newpath = createPath( TYPE_W32_LINK, newAbstractPath );
+			rc = QFile::link( oldpath, newpath );
+#else
 			char *newpath = createPath( type, newAbstractPath );
-
 			rc = ::link( oldpath, newpath );
+#endif
 
 			free( oldpath );
 			free( newpath );
@@ -557,6 +563,18 @@ char *AbstractFile::createPath( ConcreteFileType type, const char *abstractPath 
 				path = (char *)malloc( strlen(abstractPath) + strlen(GZIP_EXT) + 1 );
 				assert( path );
 				sprintf( path, "%s%s", abstractPath, GZIP_EXT );
+			}
+		}
+		break;
+	case TYPE_W32_LINK:
+		{
+			if( strstr( &abstractPath[strlen(abstractPath)-strlen(W32_LINK_EXT)], W32_LINK_EXT ) )
+				path = strdup( abstractPath );
+			else
+			{
+				path = (char *)malloc( strlen(abstractPath) + strlen(W32_LINK_EXT) + 1 );
+				assert( path );
+				sprintf( path, "%s%s", abstractPath, W32_LINK_EXT );
 			}
 		}
 		break;
