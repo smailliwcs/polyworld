@@ -164,7 +164,12 @@ bool Interpreter::eval( const std::string &expr,
 	assert( alive );
 
 	char outputPath[128];
+#ifdef __WIN32__
+	static int count = 0;
+	sprintf( outputPath, "proplib.%d.%d", getpid(), ++count );
+#else
 	sprintf( outputPath, "/tmp/proplib.%d", getpid() );
+#endif
 
 	char script[1024 * 4];
 	sprintf( script,
