@@ -75,6 +75,7 @@
 #include "brick.h"
 
 #ifdef __WIN32__
+	#define mkdir(pathname, mode) mkdir(pathname)
 	#define srand48(seedval) srand(seedval)
 #endif
 
