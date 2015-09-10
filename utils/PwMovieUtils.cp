@@ -72,9 +72,14 @@ using namespace std;
 #if __APPLE__
 	#define SwapInt32(x) OSSwapInt32(x)
 	#define SwapInt16(x) OSSwapInt16(x)
-#else	// #elif linux
+#endif
+#if __linux__
 	#define SwapInt32(x) bswap_32(x)
 	#define SwapInt16(x) bswap_16(x)
+#endif
+#if __WIN32__
+	#define SwapInt32(x) __builtin_bswap32(x)
+	#define SwapInt16(x) __builtin_bswap16(x)
 #endif
 
 namespace PwMovieMetaEntry
