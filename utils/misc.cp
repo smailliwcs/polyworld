@@ -176,7 +176,11 @@ void makeDirs( const string &path )
 		if( alreadyMade.find(path) == alreadyMade.end() )
 		{
 			char cmd[1024];
+#ifdef __WIN32__
+			sprintf( cmd, "bash -c \"mkdir -p %s\"", path.c_str() );
+#else
 			sprintf( cmd, "mkdir -p %s", path.c_str() );
+#endif
 			if( 0 != system(cmd) )
 				exit( 1 );
 
