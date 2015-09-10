@@ -15,7 +15,9 @@
 #include "Monitor.h"
 #include "Simulation.h"
 #include "SimulationController.h"
-#include "TerminalUI.h"
+#ifndef __WIN32__
+	#include "TerminalUI.h"
+#endif
 
 
 using namespace std;
@@ -138,6 +140,7 @@ int main( int argc, char** argv )
 		exitval = app.exec();
 		delete mainWindow;
 	}
+#ifndef __WIN32__
 	else if( ui == "term" )
 	{
 		TerminalUI *term = new TerminalUI( simulationController );
@@ -145,6 +148,7 @@ int main( int argc, char** argv )
 		exitval = app.exec();
 		delete term;
 	}
+#endif
 	else
 		assert( false );
 
