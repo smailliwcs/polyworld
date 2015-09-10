@@ -11,6 +11,8 @@ QT += opengl
 QMAKE_EXT_CPP = .cp
 QMAKE_CXXFLAGS += -std=gnu++0x -fopenmp
 QMAKE_LFLAGS += -Wl,-no-undefined,--enable-runtime-pseudo-reloc -fopenmp
+Debug:DEFINES += POLYWORLD_DEBUG
+Release:DEFINES += POLYWORLD_RELEASE
 INCLUDEPATH += /mingw/include/GL /qt/include/QtOpenGL /python/include $$SOURCE_DIRS
 LIBS += -ldl -lgsl -lpsapi -lpthread -L/python/libs -lpython27 -lwsock32 -lz
 

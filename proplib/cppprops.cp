@@ -20,8 +20,18 @@ using namespace std;
 #define SrcCppprops ".bld/cppprops/src/generated.cpp"
 #if __linux__
 #define LibCppprops ".bld/cppprops/bin/libcppprops.so"
-#else
+#endif
+#if __APPLE__
 #define LibCppprops ".bld/cppprops/bin/libcppprops.dylib"
+#endif
+#if __WIN32__
+#ifdef POLYWORLD_DEBUG
+	#define Makefile "Makefile.Debug"
+#endif
+#ifdef POLYWORLD_RELEASE
+	#define Makefile "Makefile.Release"
+#endif
+#define LibCppprops ".bld/cppprops/bin/cppprops.dll"
 #endif
 
 #define l(content) out << content << endl
@@ -70,7 +80,11 @@ void CppProperties::init( Document *doc, UpdateContext *context )
 
 	generateLibrarySource();
 
+#ifdef __WIN32__
+	SYSTEM( "make -f " Makefile " -f Makefile.cppprops cppprops 1>/dev/null" );
+#else
 	SYSTEM( "scons -f scripts/build/SConstruct " LibCppprops " 1>/dev/null" );
+#endif
 
 	void *libHandle = dlopen( LibCppprops, RTLD_LAZY );
 	errif( !libHandle, "Failed opening " LibCppprops );
