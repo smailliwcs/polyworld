@@ -80,6 +80,8 @@ using namespace std;
 #if __WIN32__
 	#define SwapInt32(x) __builtin_bswap32(x)
 	#define SwapInt16(x) __builtin_bswap16(x)
+	#define ftello(stream) ftello64(stream)
+	#define fseeko(stream, offset, whence) fseeko64(stream, offset, whence)
 #endif
 
 namespace PwMovieMetaEntry
