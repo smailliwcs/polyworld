@@ -1,5 +1,9 @@
 #include "GroupsBrain.h"
 
+#ifdef __WIN32__
+	#include <malloc.h>
+#endif
+
 #include "agent.h"
 #include "error.h"
 #include "FiringRateModel.h"

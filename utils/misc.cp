@@ -19,10 +19,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/errno.h>
+#ifdef __WIN32__
+	#include <errno.h>
+#else
+	#include <sys/errno.h>
+#endif
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/resource.h>
+#ifndef __WIN32__
+	#include <sys/resource.h>
+#endif
 #include <set>
 #include <string>
 #include <vector>

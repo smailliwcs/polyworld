@@ -3,6 +3,9 @@
 #include "interpreter.h"
 
 #include <assert.h>
+#ifdef __WIN32__
+	#include <process.h>
+#endif
 #include <stdio.h>
 
 #include <sstream>

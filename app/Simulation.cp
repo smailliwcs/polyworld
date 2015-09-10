@@ -36,7 +36,11 @@
 #include <sstream>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/errno.h>
+#ifdef __WIN32__
+	#include <errno.h>
+#else
+	#include <sys/errno.h>
+#endif
 #include <assert.h>
 
 // Local

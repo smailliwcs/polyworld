@@ -18,9 +18,14 @@
 #if __APPLE__
 	#include <mach/mach_time.h>
 	#include <libkern/OSByteOrder.h>
-#else	// #elif linux
+#endif
+#if __linux__
 	#include <byteswap.h>
 	#include <netinet/in.h>
+	#include <sys/time.h>
+#endif
+#if __WIN32__
+	#include <winsock2.h>
 	#include <sys/time.h>
 #endif
 
