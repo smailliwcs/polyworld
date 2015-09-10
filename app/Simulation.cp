@@ -74,6 +74,10 @@
 #include "BrickPatch.h"
 #include "brick.h"
 
+#ifdef __WIN32__
+	#define srand48(seedval) srand(seedval)
+#endif
+
 
 using namespace genome;
 using namespace std;

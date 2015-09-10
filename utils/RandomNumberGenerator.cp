@@ -6,6 +6,11 @@
 
 #include "misc.h"
 
+#ifdef __WIN32__
+	#define srand48(seedval) srand(seedval)
+	#define drand48() randpw()
+#endif
+
 RandomNumberGenerator::Type RandomNumberGenerator::types[];
 
 namespace __RandomNumberGenerator

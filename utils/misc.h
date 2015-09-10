@@ -36,7 +36,11 @@
 
 #define interp(x,ylo,yhi) ((ylo)+(x)*((yhi)-(ylo)))
 
-#define randpw() drand48()
+#ifdef __WIN32__
+	inline double randpw() { int r; do { r = rand(); } while (r == RAND_MAX); return (double)r / RAND_MAX; }
+#else
+	#define randpw() drand48()
+#endif
 #define rrand(lo,hi) (interp(randpw(),(lo),(hi)))
 
 #define index2(i,j,nj) ((i)*(nj)+(j))
