@@ -15,6 +15,7 @@
 	#include <mach/mach_time.h>
 #endif
 
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,6 +197,9 @@ void makeParentDir( const string &path )
 
 int SetMaximumFiles( long filecount )
 {
+#ifdef __WIN32__
+	return 0;
+#else
     struct rlimit lim;
 	
 	lim.rlim_cur = lim.rlim_max = (rlim_t) filecount;
@@ -203,10 +207,15 @@ int SetMaximumFiles( long filecount )
 		return 0;
 	else
 		return errno;
+#endif
 }
 
 int GetMaximumFiles( long *filecount )
 {
+#ifdef __WIN32__
+	*filecount = LONG_MAX;
+	return 0;
+#else
 	struct rlimit lim;
 	
 	if( getrlimit( RLIMIT_NOFILE, &lim ) == 0 )
@@ -216,6 +225,7 @@ int GetMaximumFiles( long *filecount )
 	}
 	else
 		return errno;
+#endif
 }
 
 
