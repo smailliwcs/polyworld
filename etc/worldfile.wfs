@@ -2738,6 +2738,11 @@ RecordFoodEnergy {
   default RecordAll
 }
 
+RecordFoodCenterOfMass {
+  type    Bool
+  default RecordAll
+}
+
 RecordGitRevision {
   type    Bool
   default False

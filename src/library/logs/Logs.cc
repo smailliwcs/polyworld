@@ -1415,6 +1415,106 @@ void Logs::FoodEnergyLog::processEvent( )
 
 
 //===========================================================================
+// FoodCenterOfMassLog
+//===========================================================================
+
+//---------------------------------------------------------------------------
+// Logs::FoodCenterOfMassLog::init
+//---------------------------------------------------------------------------
+void Logs::FoodCenterOfMassLog::init( TSimulation *sim, Document *doc )
+{
+	if( doc->get("RecordFoodCenterOfMass") )
+	{
+		initRecording( sim,
+					   SimulationStateScope,
+					   sim::Event_SimInited
+					   | sim::Event_StepEnd );
+
+		createWriter( "run/motion/position/food/centerofmass.txt" );
+
+		int count = FoodType::getNumberDefinitions();
+		const char **colnames = new const char*[count * 2 + 2];
+		datalib::Type *coltypes = new datalib::Type[count * 2 + 1];
+		colnames[0] = "Timestep";
+		coltypes[0] = datalib::INT;
+		for( int i = 0; i < count; i++ )
+		{
+			char buf[128];
+			sprintf( buf, "x%d", i + 1 );
+			colnames[i * 2 + 1] = strdup( buf );
+			coltypes[i * 2 + 1] = datalib::FLOAT;
+			sprintf( buf, "z%d", i + 1 );
+			colnames[i * 2 + 2] = strdup( buf );
+			coltypes[i * 2 + 2] = datalib::FLOAT;
+		}
+		colnames[count * 2 + 1] = NULL;
+
+		getWriter()->beginTable( "CenterOfMass",
+								  colnames,
+								  coltypes );
+
+		delete[] colnames;
+		delete[] coltypes;
+	}
+}
+
+//---------------------------------------------------------------------------
+// Logs::FoodCenterOfMassLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::FoodCenterOfMassLog::processEvent( const sim::SimInitedEvent &e )
+{
+	processEvent();
+}
+
+//---------------------------------------------------------------------------
+// Logs::FoodCenterOfMassLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::FoodCenterOfMassLog::processEvent( const sim::StepEndEvent &e )
+{
+	processEvent();
+}
+
+//---------------------------------------------------------------------------
+// Logs::FoodCenterOfMassLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::FoodCenterOfMassLog::processEvent( )
+{
+	int count = FoodType::getNumberDefinitions();
+	float *x = new float[count];
+	float *z = new float[count];
+	float *energy = new float[count];
+	for( int i = 0; i < count; i++ )
+	{
+		x[i] = 0.0f;
+		z[i] = 0.0f;
+		energy[i] = 0.0f;
+	}
+	food* f;
+	objectxsortedlist::gXSortedObjects.reset();
+	while( objectxsortedlist::gXSortedObjects.nextObj( FOODTYPE, (gobject**) &f ) )
+	{
+		int i = f->getType()->index;
+		float e = f->getEnergy().sum();
+		x[i] += f->x() * e;
+		z[i] += f->z() * e;
+		energy[i] += e;
+	}
+	Variant *coldata = (Variant *)alloca(sizeof(Variant) * (count * 2 + 1));
+	coldata[0] = getStep();
+	for( int i = 0; i < count; i++ )
+	{
+		coldata[i * 2 + 1] = energy[i] == 0.0f ?  globals::worldsize / 2 : x[i] / energy[i];
+		coldata[i * 2 + 2] = energy[i] == 0.0f ? -globals::worldsize / 2 : z[i] / energy[i];
+	}
+	delete[] x;
+	delete[] z;
+	delete[] energy;
+	DataLibWriter *writer = getWriter();
+	writer->addRow( coldata );
+}
+
+
+//===========================================================================
 // GeneStatsLog
 //===========================================================================
 
