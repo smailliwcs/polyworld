@@ -2598,8 +2598,9 @@ RecordPosition {
   type    Enum
   enum    Values {
     False,
-    Precise,     # X,Y,Z to full precision
-    Approximate  # X,Z rounded to 2 decimal places
+    Precise,      # X,Y,Z to full precision
+    Approximate,  # X,Z rounded to 2 decimal places
+    CenterOfMass  # X,Z to full precision
   }
   default Approximate if RecordAll else False
 }

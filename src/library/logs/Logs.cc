@@ -298,14 +298,35 @@ void Logs::AgentPositionLog::init( TSimulation *sim, Document *doc )
 			_mode = Precise;
 		else if( mode == "Approximate" )
 			_mode = Approximate;
+		else if( mode == "CenterOfMass" )
+			_mode = CenterOfMass;
 		else
 			assert( false );
 
-		initRecording( sim,
-					   AgentStateScope,
-					   sim::Event_AgentBirth
-					   | sim::Event_BodyUpdated
-					   | sim::Event_AgentDeath );
+		if( _mode == CenterOfMass )
+		{
+			initRecording( sim,
+						   SimulationStateScope,
+						   sim::Event_SimInited
+						   | sim::Event_StepEnd );
+
+			DataLibWriter *writer = createWriter( "run/motion/position/agents/centerofmass.txt" );
+
+			const char *colnames[] = {"Timestep", "x", "z", NULL};
+			datalib::Type coltypes[] = {datalib::INT, datalib::FLOAT, datalib::FLOAT};
+
+			writer->beginTable( "CenterOfMass",
+								colnames,
+								coltypes );
+		}
+		else
+		{
+			initRecording( sim,
+						   AgentStateScope,
+						   sim::Event_AgentBirth
+						   | sim::Event_BodyUpdated
+						   | sim::Event_AgentDeath );
+		}
 	}
 }
 
@@ -350,6 +371,8 @@ void Logs::AgentPositionLog::processEvent( const sim::AgentBirthEvent &e )
 								colformats );
 		}
 		break;
+	case CenterOfMass:
+		break;
 	default:
 		assert( false );
 	}
@@ -373,6 +396,8 @@ void Logs::AgentPositionLog::processEvent( const AgentBodyUpdatedEvent &e )
 								  e.a->x(),
 								  e.a->z() );
 		break;
+	case CenterOfMass:
+		break;
 	default:
 		assert( false );
 	}
@@ -384,6 +409,47 @@ void Logs::AgentPositionLog::processEvent( const AgentBodyUpdatedEvent &e )
 void Logs::AgentPositionLog::processEvent( const sim::AgentDeathEvent &e )
 {
 	delete getWriter( e.a );
+}
+
+//---------------------------------------------------------------------------
+// Logs::AgentPositionLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::AgentPositionLog::processEvent( const sim::SimInitedEvent &e )
+{
+	if( _mode == CenterOfMass )
+		recordCenterOfMass();
+}
+
+//---------------------------------------------------------------------------
+// Logs::AgentPositionLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::AgentPositionLog::processEvent( const sim::StepEndEvent &e )
+{
+	if( _mode == CenterOfMass )
+		recordCenterOfMass();
+}
+
+//---------------------------------------------------------------------------
+// Logs::AgentPositionLog::recordCenterOfMass
+//---------------------------------------------------------------------------
+void Logs::AgentPositionLog::recordCenterOfMass()
+{
+	float x = 0.0f;
+	float z = 0.0f;
+	int count = 0;
+	agent *a;
+	objectxsortedlist::gXSortedObjects.reset();
+	while( objectxsortedlist::gXSortedObjects.nextObj( AGENTTYPE, (gobject**)&a ) )
+	{
+		x += a->x();
+		z += a->z();
+		count++;
+	}
+	if( count == 0 )
+		return;
+	getWriter()->addRow( getStep(),
+						 x / count,
+						 z / count );
 }
 
 
