@@ -1400,6 +1400,7 @@ float agent::UpdateBody( float moveFitnessParam,
 		{
 			if( fPosition[0] > globals::worldsize || fPosition[0] < 0.0 ||
 				fPosition[2] < -globals::worldsize || fPosition[2] > 0.0 )
+			{
 				// The agent fell off a tabletop world, so it's no longer in a domain
 				// We can avoid an error below by skipping the call to TSimulation::WhichDomain
 				// Unfortunately, TSimulation::DeathAndStats may fail to subsequently kill the agent
@@ -1409,6 +1410,7 @@ float agent::UpdateBody( float moveFitnessParam,
 				// Force an error here until the issue is resolved
 				error( 2, "Possible Wile E. Coyote detected" );
 				skipDomainCheck = true;
+			}
 		}
 	} // if( ! BeingCarried() )
 
