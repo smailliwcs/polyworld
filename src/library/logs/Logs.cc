@@ -1440,10 +1440,11 @@ void Logs::FoodCenterOfMassLog::init( TSimulation *sim, Document *doc )
 		for( int i = 0; i < count; i++ )
 		{
 			char buf[128];
-			sprintf( buf, "x%d", i + 1 );
+			const char *foodType = FoodType::get( i )->name.c_str();
+			sprintf( buf, "%s_x", foodType );
 			colnames[i * 2 + 1] = strdup( buf );
 			coltypes[i * 2 + 1] = datalib::FLOAT;
-			sprintf( buf, "z%d", i + 1 );
+			sprintf( buf, "%s_z", foodType );
 			colnames[i * 2 + 2] = strdup( buf );
 			coltypes[i * 2 + 2] = datalib::FLOAT;
 		}
