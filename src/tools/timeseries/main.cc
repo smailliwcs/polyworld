@@ -1,7 +1,5 @@
 #include <iostream>
 #include <limits>
-#include <map>
-#include <set>
 #include <stdlib.h>
 #include <string>
 #include <string.h>
@@ -14,6 +12,7 @@
 #include "utils/AbstractFile.h"
 #include "utils/analysis.h"
 #include "utils/misc.h"
+#include "utils/timeseries.h"
 
 struct Args {
     std::string run;
@@ -31,10 +30,6 @@ struct Args {
 void printUsage(int, char**);
 bool tryParseArgs(int, char**, Args&);
 void printArgs(const Args&);
-void printHeader(int, RqNervousSystem*);
-void printNerves(RqNervousSystem*);
-void printSynapses(RqNervousSystem*);
-void printTimeSeries(RqNervousSystem*, int, int);
 void printActual(AbstractFile*, int);
 void writeBrainFunction(AbstractFile*, int, RqNervousSystem*, int, int, int);
 
@@ -68,12 +63,12 @@ int main(int argc, char** argv) {
             writeBrainFunction(file, agent, cns, args.repeats, args.transient, args.steps);
             delete file;
         } else {
-            printHeader(agent, cns);
-            printNerves(cns);
-            printSynapses(cns);
+            timeseries::writeHeader(std::cout, agent, cns);
+            timeseries::writeNerves(std::cout, cns);
+            timeseries::writeSynapses(std::cout, cns);
             std::cout << "# BEGIN ENSEMBLE" << std::endl;
             for (int index = 0; index < args.repeats; index++) {
-                printTimeSeries(cns, args.transient, args.steps);
+                timeseries::writeTimeSeries(std::cout, cns, args.transient, args.steps);
             }
             if (args.actual) {
                 char path[256];
@@ -192,75 +187,6 @@ void printArgs(const Args& args) {
     std::cout << "transient = " << args.transient << std::endl;
     std::cout << "steps = " << args.steps << std::endl;
     std::cout << "# END ARGUMENTS" << std::endl;
-}
-
-void printHeader(int agent, RqNervousSystem* cns) {
-    std::cout << "# AGENT " << agent << std::endl;
-    NeuronModel::Dimensions dims = cns->getBrain()->getDimensions();
-    std::cout << "# DIMENSIONS";
-    std::cout << " " << dims.numNeurons;
-    std::cout << " " << dims.numInputNeurons;
-    std::cout << " " << dims.numOutputNeurons;
-    std::cout << std::endl;
-}
-
-void printNerves(RqNervousSystem* cns) {
-    std::cout << "# BEGIN NERVES" << std::endl;
-    const NervousSystem::NerveList& nerves = cns->getNerves();
-    citfor(NervousSystem::NerveList, nerves, it) {
-        std::cout << (*it)->name << " " << (*it)->getNeuronCount() << std::endl;
-    }
-    std::cout << "# END NERVES" << std::endl;
-}
-
-void printSynapses(RqNervousSystem* cns) {
-    std::map<short, std::set<short> > synapses;
-    NeuronModel::Dimensions dims = cns->getBrain()->getDimensions();
-    NeuronModel* model = cns->getBrain()->getNeuronModel();
-    for (int synapse = 0; synapse < dims.numSynapses; synapse++) {
-        short neuron1;
-        short neuron2;
-        float weight;
-        float learningRate;
-        model->get_synapse(synapse, neuron1, neuron2, weight, learningRate);
-        synapses[neuron1].insert(neuron2);
-    }
-    std::cout << "# BEGIN SYNAPSES" << std::endl;
-    for (int neuron = 0; neuron < dims.numNeurons; neuron++) {
-        if (synapses[neuron].size() == 0) {
-            continue;
-        }
-        std::cout << neuron;
-        citfor(std::set<short>, synapses[neuron], it) {
-            std::cout << " " << *it;
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "# END SYNAPSES" << std::endl;
-}
-
-void printTimeSeries(RqNervousSystem* cns, int transient, int steps) {
-    cns->getBrain()->randomizeActivations();
-    for (int step = 1; step <= transient; step++) {
-        cns->update(false);
-    }
-    NeuronModel::Dimensions dims = cns->getBrain()->getDimensions();
-    double* activations = new double[dims.numNeurons];
-    std::cout << "# BEGIN TIME SERIES" << std::endl;
-    for (int step = 1; step <= steps; step++) {
-        cns->getBrain()->getActivations(activations + dims.numInputNeurons, dims.numInputNeurons, dims.getNumNonInputNeurons());
-        cns->update(false);
-        cns->getBrain()->getActivations(activations, 0, dims.numInputNeurons);
-        for (int neuron = 0; neuron < dims.numNeurons; neuron++) {
-            if (neuron > 0) {
-                std::cout << " ";
-            }
-            std::cout << activations[neuron];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "# END TIME SERIES" << std::endl;
-    delete[] activations;
 }
 
 void printActual(AbstractFile* file, int neuronCount) {
