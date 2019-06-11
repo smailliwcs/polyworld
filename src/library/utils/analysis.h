@@ -32,7 +32,7 @@ namespace analysis {
     AbstractFile* getSynapses(const std::string&, int, const std::string&);
     RqNervousSystem* getNervousSystem(genome::Genome*, AbstractFile*);
     RqNervousSystem* getNervousSystem(const std::string&, int, const std::string&);
-    RqNervousSystem* copyNervousSystem(genome::Genome*, RqNervousSystem*);
+    RqNervousSystem* copyNervousSystem(genome::Genome*, NervousSystem*);
     void setMaxWeight(RqNervousSystem*, AbstractFile*, float);
     double getExpansion(genome::Genome*, RqNervousSystem*, double, int, int, int, int);
 }

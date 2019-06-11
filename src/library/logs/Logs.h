@@ -1,3 +1,4 @@
+#include <fstream>
 #include <list>
 #include <map>
 #include <vector>
@@ -402,5 +403,25 @@ class Logs
 	private:
 		void createSynapseFile( agent *a, const char *suffix );
 	} _synapse;
+
+	//===========================================================================
+	// TimeSeriesLog
+	//===========================================================================
+	class TimeSeriesLog : public Logger
+	{
+	protected:
+		virtual void init( class TSimulation *sim, proplib::Document *doc );
+		virtual void processEvent( const sim::BrainGrownEvent &e );
+		virtual void processEvent( const sim::AgentGrownEvent &e );
+		virtual void processEvent( const sim::AgentDeathEvent &e );
+
+	private:
+		std::ofstream out;
+		int repeats;
+		int transient;
+		int steps;
+
+		void writeTimeSeries( agent *a );
+	} _timeSeries;
 
 };

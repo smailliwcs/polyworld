@@ -2753,6 +2753,50 @@ RecordSynapses {
   default RecordAll
 }
 
+TimeSeriesLog {
+  type    Object
+  default {}
+  properties {
+    On {
+      type    Bool
+      default False
+    }
+
+    FileName {
+      type    String
+      default "timeseries"
+    }
+
+    Stage {
+      type    Enum
+      enum    Values {
+        incept,
+        birth,
+        death
+      }
+      default death
+    }
+
+    Repeats {
+      type    Int
+      default 1
+      min     1
+    }
+
+    Transient {
+      type    Int
+      default 10
+      min     0
+    }
+
+    Steps {
+      type    Int
+      default 1000
+      min     1
+    }
+  }
+}
+
 CompressFiles {
   type    Bool
   default True

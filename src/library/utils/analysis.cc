@@ -159,7 +159,7 @@ RqNervousSystem* analysis::getNervousSystem(const std::string& run, int agent, c
     return cns;
 }
 
-RqNervousSystem* analysis::copyNervousSystem(genome::Genome* genome, RqNervousSystem* other) {
+RqNervousSystem* analysis::copyNervousSystem(genome::Genome* genome, NervousSystem* other) {
     RqNervousSystem* cns = new RqNervousSystem();
     cns->grow(genome);
     cns->getBrain()->copySynapses(other->getBrain());

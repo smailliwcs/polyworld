@@ -2,6 +2,7 @@
 
 #include "Logs.h"
 
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -9,14 +10,17 @@
 
 #include "agent/agent.h"
 #include "brain/Brain.h"
+#include "brain/RqNervousSystem.h"
 #include "complexity/adami.h"
 #include "genome/GenomeUtil.h"
 #include "genome/SeparationCache.h"
 #include "proplib/proplib.h"
 #include "sim/globals.h"
 #include "sim/Simulation.h"
+#include "utils/analysis.h"
 #include "utils/datalib.h"
 #include "utils/misc.h"
+#include "utils/timeseries.h"
 
 using namespace datalib;
 using namespace genome;
@@ -2032,4 +2036,92 @@ void Logs::SynapseLog::createSynapseFile( agent *a, const char *suffix )
 	AbstractFile *file = createFile( path );
 	a->GetBrain()->dumpSynapses( file, a->Number() );
 	delete file;
+}
+
+
+//===========================================================================
+// TimeSeriesLog
+//===========================================================================
+
+//---------------------------------------------------------------------------
+// Logs::TimeSeriesLog::init
+//---------------------------------------------------------------------------
+void Logs::TimeSeriesLog::init( TSimulation *sim, Document *doc )
+{
+	Property &prop = doc->get( "TimeSeriesLog" );
+	if( prop.get( "On" ) )
+	{
+		out.open( prop.get( "FileName" ) );
+		sim::EventType events = sim::Event_None;
+		string stage = prop.get( "Stage" );
+		if( stage == "incept" )
+		{
+			events |= sim::Event_BrainGrown;
+		}
+		else if( stage == "birth" )
+		{
+			events |= sim::Event_AgentGrown;
+		}
+		else if( stage == "death" )
+		{
+			events |= sim::Event_AgentDeath;
+		}
+		initRecording( sim, SimulationStateScope, events );
+		repeats = prop.get( "Repeats" );
+		transient = prop.get( "Transient" );
+		steps = prop.get( "Steps" );
+		out << "# BEGIN ARGUMENTS" << endl;
+		out << "stage = " << stage << endl;
+		out << "repeats = " << repeats << endl;
+		out << "transient = " << transient << endl;
+		out << "steps = " << steps << endl;
+		out << "# END ARGUMENTS" << endl;
+	}
+}
+
+//---------------------------------------------------------------------------
+// Logs::TimeSeriesLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::TimeSeriesLog::processEvent( const sim::BrainGrownEvent &e )
+{
+	writeTimeSeries( e.a );
+}
+
+//---------------------------------------------------------------------------
+// Logs::TimeSeriesLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::TimeSeriesLog::processEvent( const sim::AgentGrownEvent &e )
+{
+	writeTimeSeries( e.a );
+}
+
+//---------------------------------------------------------------------------
+// Logs::TimeSeriesLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::TimeSeriesLog::processEvent( const sim::AgentDeathEvent &e )
+{
+	writeTimeSeries( e.a );
+}
+
+//---------------------------------------------------------------------------
+// Logs::TimeSeriesLog::writeTimeSeries
+//---------------------------------------------------------------------------
+void Logs::TimeSeriesLog::writeTimeSeries( agent *a )
+{
+	RqNervousSystem *cns = analysis::copyNervousSystem( a->Genes(), a->GetNervousSystem() );
+	cns->getBrain()->freeze();
+	static mutex m;
+	{
+		lock_guard<mutex> lock(m);
+		timeseries::writeHeader( out, a->Number(), cns );
+		timeseries::writeNerves( out, cns );
+		timeseries::writeSynapses( out, cns );
+		out << "# BEGIN ENSEMBLE" << endl;
+		for( int index = 0; index < repeats; index++ )
+		{
+			timeseries::writeTimeSeries( out, cns, transient, steps );
+		}
+		out << "# END ENSEMBLE" << endl;
+	}
+	delete cns;
 }
