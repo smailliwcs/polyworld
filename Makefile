@@ -1,6 +1,6 @@
 include Makefile.conf
 
-targets=library app qtrenderer rancheck PwMoviePlayer proputil pmvutil qt_clust passive nullevo neurons expansion bifurcation timeseries
+targets=library app qtrenderer rancheck PwMoviePlayer proputil pmvutil qt_clust passive nullevo neurons expansion bifurcation genetics timeseries
 
 .PHONY: ${targets} clean
 
@@ -48,6 +48,9 @@ expansion:
 
 bifurcation:
 	+ make -C src/tools/bifurcation
+
+genetics:
+	+ make -C src/tools/genetics
 
 timeseries:
 	+ make -C src/tools/timeseries

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <string>
 
 #include "brain/RqNervousSystem.h"
@@ -7,6 +8,11 @@
 #include "utils/AbstractFile.h"
 
 namespace analysis {
+    struct Event {
+        std::string type;
+        int agent;
+    };
+    
     class Vector {
     public:
         static void add(Vector&, Vector&, Vector&);
@@ -28,6 +34,7 @@ namespace analysis {
     int getMaxTimestep(const std::string&);
     int getInitAgentCount(const std::string&);
     int getMaxAgent(const std::string&);
+    std::map<int, std::list<Event> > getEvents(const std::string&);
     genome::Genome* getGenome(const std::string&, int);
     AbstractFile* getSynapses(const std::string&, int, const std::string&);
     RqNervousSystem* getNervousSystem(genome::Genome*, AbstractFile*);

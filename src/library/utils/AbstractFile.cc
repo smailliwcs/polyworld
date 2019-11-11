@@ -431,6 +431,17 @@ char *AbstractFile::gets( char *s, int size )
 	return retval;
 }
 
+void AbstractFile::cat()
+{
+	const int BUFLEN = 1024;
+	char buf[BUFLEN];
+
+	while( this->gets( buf, BUFLEN ) )
+	{
+		fputs( buf, stdout );
+	}
+}
+
 int AbstractFile::seek( offset_t offset,
 						int whence )
 {

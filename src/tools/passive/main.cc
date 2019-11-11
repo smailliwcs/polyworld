@@ -5,7 +5,6 @@
 #include <list>
 #include <map>
 #include <set>
-#include <sstream>
 #include <stdlib.h>
 #include <string>
 #include <string.h>
@@ -28,17 +27,11 @@ struct Args {
     int batch;
 };
 
-struct Event {
-    std::string type;
-    int agent;
-};
-
 void printUsage(int, char**);
 bool tryParseArgs(int, char**, Args&);
 void copyDir(const std::string&, const std::string&, const std::string&);
 void copyFile(const std::string&, const std::string&, const std::string&);
 void copyAbstractFile(const std::string&, const std::string&, std::string);
-std::map<int, std::list<Event> > getEvents(const std::string&);
 std::map<int, genome::Genome*>::iterator pick(std::map<int, genome::Genome*>&);
 void logGenome(const std::string&, int, genome::Genome*);
 void logSynapses(const std::string&, int, const std::string&, RqNervousSystem*);
@@ -79,16 +72,16 @@ int main(int argc, char** argv) {
         }
         copyAbstractFile(args.driven, args.passive, "/brain/synapses/synapses_" + std::to_string(agent) + "_birth.txt");
     }
-    std::map<int, std::list<Event> > events = getEvents(args.driven);
+    std::map<int, std::list<analysis::Event> > events = analysis::getEvents(args.driven);
     int maxTimestep = analysis::getMaxTimestep(args.driven);
     for (int timestep = 1; timestep <= maxTimestep; timestep++) {
         if (timestep % 100 == 0) {
             std::cerr << timestep << std::endl;
         }
-        std::map<int, std::list<Event> >::iterator eventsIter = events.find(timestep);
+        std::map<int, std::list<analysis::Event> >::iterator eventsIter = events.find(timestep);
         if (eventsIter != events.end()) {
-            itfor(std::list<Event>, eventsIter->second, timestepEventsIter) {
-                Event event = *timestepEventsIter;
+            itfor(std::list<analysis::Event>, eventsIter->second, timestepEventsIter) {
+                analysis::Event event = *timestepEventsIter;
                 if (event.type == "BIRTH") {
                     births[event.agent] = timestep;
                     drivens.insert(event.agent);
@@ -195,25 +188,6 @@ void copyAbstractFile(const std::string& run1, const std::string& run2, std::str
         path += ".gz";
     }
     SYSTEM(("cp " + (run1 + path) + " " + (run2 + path)).c_str());
-}
-
-std::map<int, std::list<Event> > getEvents(const std::string& run) {
-    std::map<int, std::list<Event> > events;
-    std::ifstream in(run + "/BirthsDeaths.log");
-    std::string line;
-    std::getline(in, line);
-    while (std::getline(in, line)) {
-        std::istringstream stream(line);
-        Event event;
-        int timestep;
-        stream >> timestep >> event.type >> event.agent;
-        if (stream) {
-            events[timestep].push_back(event);
-        } else {
-            std::cerr << "Parse failed: " << line << std::endl;
-        }
-    }
-    return events;
 }
 
 std::map<int, genome::Genome*>::iterator pick(std::map<int, genome::Genome*>& genomes) {

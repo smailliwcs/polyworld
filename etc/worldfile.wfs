@@ -2753,6 +2753,22 @@ RecordSynapses {
   default RecordAll
 }
 
+PopulationGeneticsLog {
+  type    Object
+  default {}
+  properties {
+    On {
+      type    Bool
+      default False
+    }
+
+    FileName {
+      type    String
+      default "genetics"
+    }
+  }
+}
+
 TimeSeriesLog {
   type    Object
   default {}

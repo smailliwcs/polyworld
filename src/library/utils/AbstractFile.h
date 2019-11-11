@@ -62,6 +62,7 @@ class AbstractFile
 	size_t read( void *ptr, size_t size, size_t nmemb );
 	int scanf( const char *format, ... );
 	char *gets( char *s, int size );
+	void cat();
 
 	int seek( offset_t offset, int whence );
 	offset_t tell();

@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <math.h>
+#include <sstream>
 #include <stdlib.h>
 #include <string>
 #include <time.h>
@@ -118,6 +119,25 @@ int analysis::getMaxAgent(const std::string& run) {
     DataLibReader reader((run + "/lifespans.txt").c_str());
     reader.seekTable("LifeSpans");
     return reader.nrows();
+}
+
+std::map<int, std::list<analysis::Event> > analysis::getEvents(const std::string& run) {
+    std::map<int, std::list<Event> > events;
+    std::ifstream in(run + "/BirthsDeaths.log");
+    std::string line;
+    std::getline(in, line);
+    while (std::getline(in, line)) {
+        std::istringstream stream(line);
+        Event event;
+        int timestep;
+        stream >> timestep >> event.type >> event.agent;
+        if (stream) {
+            events[timestep].push_back(event);
+        } else {
+            std::cerr << "Parse failed: " << line << std::endl;
+        }
+    }
+    return events;
 }
 
 genome::Genome* analysis::getGenome(const std::string& run, int agent) {

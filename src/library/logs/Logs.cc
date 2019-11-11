@@ -1855,6 +1855,87 @@ void Logs::PopulationLog::processEvent( const sim::StepEndEvent &e )
 
 
 //===========================================================================
+// PopulationGeneticsLog
+//===========================================================================
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::~PopulationGeneticsLog
+//---------------------------------------------------------------------------
+Logs::PopulationGeneticsLog::~PopulationGeneticsLog()
+{
+	delete f;
+}
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::init
+//---------------------------------------------------------------------------
+void Logs::PopulationGeneticsLog::init( TSimulation *sim, Document *doc )
+{
+	Property &prop = doc->get( "PopulationGeneticsLog" );
+	if( prop.get( "On" ) )
+	{
+		const char *fileName = ((string)prop.get( "FileName" )).c_str();
+		f = AbstractFile::open( AbstractFile::TYPE_FILE, fileName, "w" );
+		f->printf( "SIZE %d\n", genome::GenomeUtil::schema->getMutableSize() );
+		initRecording( sim,
+					   SimulationStateScope,
+					   sim::Event_SimInited
+					   | sim::Event_AgentBirth
+					   | sim::Event_AgentDeath
+					   | sim::Event_StepEnd );
+	}
+}
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::PopulationGeneticsLog::processEvent( const sim::SimInitedEvent &e )
+{
+	f->printf( "STEP 0\n" );
+	f->flush();
+}
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::PopulationGeneticsLog::processEvent( const sim::AgentBirthEvent &e )
+{
+	if( e.reason != LifeSpan::BR_VIRTUAL )
+	{
+		static mutex m;
+		{
+			lock_guard<mutex> lock(m);
+			f->printf( "BIRTH %ld\n", e.a->Number() );
+			e.a->Genes()->dump( f );
+			f->printf( "\n" );
+			f->flush();
+		}
+	}
+}
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::PopulationGeneticsLog::processEvent( const sim::AgentDeathEvent &e )
+{
+	if( e.reason != LifeSpan::DR_SIMEND )
+	{
+		f->printf( "DEATH %ld\n", e.a->Number() );
+		f->flush();
+	}
+}
+
+//---------------------------------------------------------------------------
+// Logs::PopulationGeneticsLog::processEvent
+//---------------------------------------------------------------------------
+void Logs::PopulationGeneticsLog::processEvent( const sim::StepEndEvent &e )
+{
+	f->printf( "STEP %ld\n", getStep() );
+	f->flush();
+}
+
+
+//===========================================================================
 // SeparationLog
 //===========================================================================
 
