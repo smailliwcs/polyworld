@@ -1863,7 +1863,10 @@ void Logs::PopulationLog::processEvent( const sim::StepEndEvent &e )
 //---------------------------------------------------------------------------
 Logs::PopulationGeneticsLog::~PopulationGeneticsLog()
 {
-	delete f;
+	if( _record )
+	{
+		delete f;
+	}
 }
 
 //---------------------------------------------------------------------------
