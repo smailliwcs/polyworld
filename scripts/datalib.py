@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import re
 import common_functions
 import iterators
@@ -237,7 +239,7 @@ def write( path,
 						if replace:
 							remove_existing.append(et)
 						else:
-							print 'WARNING: %s table found in both existing and new data, but not allowed to replace; discarding new data and retaining old' % et.name
+							print('WARNING: %s table found in both existing and new data, but not allowed to replace; discarding new data and retaining old' % et.name)
 							remove_new.append(t)
 			f.close()
 			for et in remove_existing:
@@ -324,12 +326,12 @@ def write( path,
 				dims.rowlen = rowlen
 			else:
 				if dims.rowlen != rowlen:
-					print 'dims.rowlen =', dims.rowlen
-					print 'rowlen =', rowlen
-					print 'table =', table.name
-					print 'linelist =', linelist
-					print 'col_widths =', col_widths
-					print 'data =', ','.join(linelist)
+					print('dims.rowlen =', dims.rowlen)
+					print('rowlen =', rowlen)
+					print('table =', table.name)
+					print('linelist =', linelist)
+					print('col_widths =', col_widths)
+					print('data =', ','.join(linelist))
 					assert(false)
 
 		__end_table(f, table.name)
@@ -535,7 +537,8 @@ def parse_digest( path ):
 	#
 	# Parse the digest start/size from end of file
 	#
-	f.seek( -64, os.SEEK_END )
+	f.seek( 0, os.SEEK_END )
+	f.seek( f.tell() - 64, os.SEEK_SET )
 
 	start = -1
 	size = -1
@@ -807,13 +810,13 @@ def test():
 
 		it = iterators.MatrixIterator(table, range(1,3), ['B'])
 		for a in it:
-			print a
+			print(a)
 
 		datalib.write('/tmp/datalib', table)
 
 		tables = datalib.parse('/tmp/datalib', keycolname = 'Time')
 
 		table = tables['Example 2']
-		print 'key=',table.keycolname
+		print('key=',table.keycolname)
 
-		print tables['Example 2'][1]['A']
+		print(tables['Example 2'][1]['A'])

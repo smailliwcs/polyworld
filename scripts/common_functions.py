@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os, re, sys
 import glob
 from subprocess import Popen, PIPE
@@ -41,7 +43,7 @@ def isverbose():
 
 def verbose(msg):
 	if _isverbose:
-		print msg
+		print(msg)
 
 ####################################################################################
 ###
@@ -376,7 +378,7 @@ def truncate_paths(paths):
 
     for path in paths:
         dirs.append(os.path.dirname(path))
-	files.append(os.path.basename(path))
+    files.append(os.path.basename(path))
 
     files = get_unique(files)
     files = map(lambda x: x.strip('_'), files)
@@ -398,12 +400,12 @@ def __truncate_paths(paths, result):
     for path in paths:
         dir = path[0]
         name = path[1]['name']
-	i = path[1]['i']
-	entry = {'i': i, 'dir': dir}
-        try:
-            accumulate[name].append(entry)
-        except KeyError:
-            accumulate[name] = [entry]
+    i = path[1]['i']
+    entry = {'i': i, 'dir': dir}
+    try:
+        accumulate[name].append(entry)
+    except KeyError:
+        accumulate[name] = [entry]
 
     for name, entries in accumulate.items():
         if len(entries) == 1:
@@ -413,13 +415,13 @@ def __truncate_paths(paths, result):
             paths = []
             for entry in entries:
                 dir = entry['dir']
-		i = entry['i']
-                basename = os.path.basename(dir)
-		dirname = os.path.dirname(dir)
-		newname = os.path.join(basename, name)
-                paths.append( (dirname, {'i': i, 'name': newname}) )
-            
-            __truncate_paths(paths, result)
+        i = entry['i']
+        basename = os.path.basename(dir)
+        dirname = os.path.dirname(dir)
+        newname = os.path.join(basename, name)
+        paths.append( (dirname, {'i': i, 'name': newname}) )
+        
+        __truncate_paths(paths, result)
 
     return result
 
@@ -724,8 +726,8 @@ def list_unique(a):
 def debug(*args):
 	if DEBUG:
 		for arg in args:
-			print arg,
-		print
+			print(arg, end="")
+		print()
 
 ####################################################################################
 ###
@@ -735,6 +737,6 @@ def debug(*args):
 def print_matrix(m, fmt):
 	for row in m:
 		for col in row:
-			print fmt % (col),
-		print
+			print(fmt % (col), end="")
+		print()
 
