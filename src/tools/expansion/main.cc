@@ -1,99 +1,236 @@
 #include <iostream>
-#include <math.h>
 #include <limits>
-#include <stdio.h>
-#include <stdlib.h>
+#include <sstream>
 #include <string>
-#include <string.h>
+#include <vector>
 
 #include "brain/RqNervousSystem.h"
 #include "genome/Genome.h"
 #include "utils/AbstractFile.h"
 #include "utils/analysis.h"
+#include "utils/misc.h"
 
-struct Args {
+struct Arguments {
+    std::vector<std::string> args;
+    bool help;
     std::string mode;
     std::string run;
+    int agent;
     std::string stage;
-    float wmaxMin;
-    float wmaxMax;
-    float wmaxInc;
+    float min;
+    float max;
+    int count;
     double perturbation;
+    double threshold;
     int repeats;
     int random;
     int quiescent;
     int steps;
-    double threshold;
-    int agent;
+
+    Arguments(int argc, char** argv);
+    std::string usage();
+    bool parse();
+
+private:
+    void fail(int argi, const std::string& message);
 };
 
-void printUsage(int, char**);
-bool tryParseArgs(int, char**, Args&);
-void printArgs(const Args&);
+Arguments::Arguments(int argc, char** argv) :
+        args(argv, argv + argc) { }
+
+std::string Arguments::usage() {
+    std::ostringstream out;
+    out << "Usage:" << std::endl;
+    out << "  " << args[0] << " all RUN STAGE PERTURBATION REPEATS RANDOM QUIESCENT STEPS" << std::endl;
+    out << "  " << args[0] << " single RUN AGENT STAGE MIN MAX COUNT PERTURBATION REPEATS RANDOM QUIESCENT STEPS" << std::endl;
+    out << "  " << args[0] << " onset RUN STAGE MAX PERTURBATION THRESHOLD REPEATS RANDOM QUIESCENT STEPS" << std::endl;
+    out << std::endl;
+    out << "Calculate state space expansion (SSE) or onset of criticality (OOC)." << std::endl;
+    out << "See http://hdl.handle.net/2022/24539 for more information." << std::endl;
+    out << "  all     Report SSE for all agents using the actual maximum synaptic weight (w_max)." << std::endl;
+    out << "  single  Report SSE for a single agent over a range of w_max values." << std::endl;
+    out << "  onset   Report OOC for all agents." << std::endl;
+    out << std::endl;
+    out << "  RUN           Run directory" << std::endl;
+    out << "  AGENT         Agent ID" << std::endl;
+    out << "  STAGE         Life stage (incept, birth, or death)" << std::endl;
+    out << "  MIN           Minimum w_max value" << std::endl;
+    out << "  MAX           Maximum w_max value" << std::endl;
+    out << "  COUNT         Number of w_max values" << std::endl;
+    out << "  PERTURBATION  Magnitude of perturbation" << std::endl;
+    out << "  THRESHOLD     Threshold SSE" << std::endl;
+    out << "  REPEATS       Number of calculations per agent" << std::endl;
+    out << "  RANDOM        Number of random timesteps per calculation" << std::endl;
+    out << "  QUIESCENT     Number of quiescent timesteps per calculation" << std::endl;
+    out << "  STEPS         Number of reporting timesteps per calculation" << std::endl;
+    return out.str();
+}
+
+bool Arguments::parse() {
+    if (args.size() > 1) {
+        std::string arg1 = args[1];
+        if (arg1 == "-h" || arg1 == "--help") {
+            help = true;
+            return true;
+        }
+    }
+    help = false;
+    unsigned argi = 1;
+    try {
+#define PARSE(ARGUMENT, CONVERTER, PREDICATE, MESSAGE) \
+{ \
+    if (argi >= args.size()) { \
+        std::cerr << usage(); \
+        return false; \
+    } \
+    ARGUMENT = CONVERTER(args[argi]); \
+    if (!(PREDICATE)) { \
+        fail(argi, MESSAGE); \
+        return false; \
+    } \
+    argi++; \
+}
+        PARSE(mode, , mode == "all" || mode == "single" || mode == "onset", "Invalid mode")
+        PARSE(run, , exists(run + "/endStep.txt"), "Not a Polyworld run")
+        if (mode == "single") {
+            PARSE(agent, std::stoi, agent >= 1, "Invalid agent ID")
+        }
+        PARSE(stage, , stage == "incept" || stage == "birth" || stage == "death", "Invalid life stage")
+        if (mode == "single") {
+            PARSE(min, std::stof, min >= 0.0f, "Invalid minimum w_max value")
+            PARSE(max, std::stof, max > min, "Maximum w_max value less than or equal to minimum")
+            PARSE(count, std::stoi, count > 1, "Invalid number of w_max values")
+        } else if (mode == "onset") {
+            PARSE(max, std::stof, max >= 0.0f, "Invalid maximum w_max value")
+        }
+        PARSE(perturbation, std::stod, perturbation > 0.0, "Invalid magnitude of perturbation")
+        if (mode == "onset") {
+            PARSE(threshold, std::stod, threshold > 0.0 && threshold <= 1.0, "Invalid threshold SSE")
+        }
+        PARSE(repeats, std::stoi, repeats >= 1, "Invalid number of calculations")
+        PARSE(random, std::stoi, random >= 0, "Invalid number of random timesteps")
+        PARSE(quiescent, std::stoi, quiescent >= 0, "Invalid number of quiescent timesteps")
+        PARSE(steps, std::stoi, steps >= 1, "Invalid number of reporting timesteps")
+#undef PARSE
+    } catch (...) {
+        fail(argi, "Invalid argument");
+        return false;
+    }
+    if (argi != args.size()) {
+        std::cerr << usage();
+        return false;
+    }
+    return true;
+}
+
+void Arguments::fail(int argi, const std::string& message) {
+    std::cerr << args[0] << ": " << args[argi] << ": " << message << std::endl;
+}
+
+std::ostream& operator<<(std::ostream& out, const Arguments& arguments) {
+    if (arguments.mode == "single") {
+        out << "# AGENT = " << arguments.agent << std::endl;
+    }
+    out << "# STAGE = " << arguments.stage << std::endl;
+    if (arguments.mode == "onset") {
+        out << "# MAX = " << arguments.max << std::endl;
+    }
+    out << "# PERTURBATION = " << arguments.perturbation << std::endl;
+    if (arguments.mode == "onset") {
+        out << "# THRESHOLD = " << arguments.threshold << std::endl;
+    }
+    if (arguments.mode != "single") {
+        out << "# REPEATS = " << arguments.repeats << std::endl;
+    }
+    out << "# RANDOM = " << arguments.random << std::endl;
+    out << "# QUIESCENT = "<< arguments.quiescent << std::endl;
+    out << "# STEPS = " << arguments.steps << std::endl;
+    return out;
+}
+
+double getExpansion(genome::Genome* genome, RqNervousSystem* cns, const Arguments& arguments, int repeats);
+double getExpansion(genome::Genome* genome, RqNervousSystem* cns, const Arguments& arguments);
 
 int main(int argc, char** argv) {
-    Args args;
-    if (!tryParseArgs(argc, argv, args)) {
-        printUsage(argc, argv);
+    Arguments arguments(argc, argv);
+    if (!arguments.parse()) {
         return 1;
     }
-    printArgs(args);
-    analysis::initialize(args.run);
-    int maxAgent = args.mode == "single" ? args.agent : analysis::getMaxAgent(args.run);
-    for (int agent = args.agent; agent <= maxAgent; agent++) {
-        AbstractFile* synapses = analysis::getSynapses(args.run, agent, args.stage);
+    if (arguments.help) {
+        std::cout << arguments.usage();
+        return 0;
+    }
+    std::cout << arguments;
+    analysis::initialize(arguments.run);
+    int minAgent;
+    int maxAgent;
+    if (arguments.mode == "single") {
+        maxAgent = minAgent = arguments.agent;
+    } else {
+        minAgent = 1;
+        maxAgent = analysis::getMaxAgent(arguments.run);
+    }
+    for (int agent = minAgent; agent <= maxAgent; agent++) {
+        AbstractFile* synapses = analysis::getSynapses(arguments.run, agent, arguments.stage);
         if (synapses == NULL) {
             continue;
         }
-        genome::Genome* genome = analysis::getGenome(args.run, agent);
+        genome::Genome* genome = analysis::getGenome(arguments.run, agent);
         RqNervousSystem* cns = analysis::getNervousSystem(genome, synapses);
-        if (args.mode == "all") {
-            double expansion = analysis::getExpansion(genome, cns, args.perturbation, args.repeats, args.random, args.quiescent, args.steps);
+        if (arguments.mode == "all") {
+            double expansion = getExpansion(genome, cns, arguments);
             std::cout << agent << " " << expansion << std::endl;
-        } else if (args.mode == "single") {
-            int index = 0;
-            float wmax = args.wmaxMin;
-            while (wmax <= args.wmaxMax) {
+        } else if (arguments.mode == "single") {
+            for (int index = 0; index < arguments.count; index++) {
+                float maxWeight = interp((float)index / (arguments.count - 1), arguments.min, arguments.max);
                 synapses->seek(0, SEEK_SET);
-                analysis::setMaxWeight(cns, synapses, wmax);
-                for (int repeat = 0; repeat < args.repeats; repeat++) {
-                    double expansion = analysis::getExpansion(genome, cns, args.perturbation, 1, args.random, args.quiescent, args.steps);
-                    std::cout << wmax << " " << expansion << std::endl;
+                analysis::setMaxWeight(cns, synapses, maxWeight);
+                for (int repeat = 1; repeat <= arguments.repeats; repeat++) {
+                    double expansion = getExpansion(genome, cns, arguments, 1);
+                    std::cout << maxWeight << " " << expansion << std::endl;
                 }
-                index++;
-                wmax = args.wmaxMin + index * args.wmaxInc;
             }
-        } else if (args.mode == "onset") {
-            int stage = 1;
-            bool done = false;
-            float wmaxStageInc = args.wmaxInc;
-            float wmaxStageMax = args.wmaxInc * 100.0f;
-            for (float wmax = args.wmaxMin; wmax <= args.wmaxMax; wmax += wmaxStageInc) {
-                synapses->seek(0, SEEK_SET);
-                analysis::setMaxWeight(cns, synapses, wmax);
-                double expansion = analysis::getExpansion(genome, cns, args.perturbation, 1, args.random, args.quiescent, args.steps);
-                if (expansion >= args.threshold * 0.9) {
-                    expansion = analysis::getExpansion(genome, cns, args.perturbation, args.repeats, args.random, args.quiescent, args.steps);
-                }
-                if (expansion >= args.threshold) {
-                    if (stage == 1) {
-                        std::cout << agent << " " << wmax << std::endl;
-                        done = true;
+        } else if (arguments.mode == "onset") {
+            float onset = std::numeric_limits<float>::infinity();
+            float start = 0.0f;
+            int multiplier = 1;
+            int resolution = 0;
+            bool found = false;
+            while (true) {
+                float maxWeight = 0.0f;
+                for ( ; multiplier <= 10; multiplier++) {
+                    maxWeight = multiplier * pow(10.0f, resolution) + start;
+                    if (maxWeight > arguments.max || maxWeight >= onset) {
                         break;
-                    } else {
-                        stage--;
-                        wmaxStageMax = wmax;
-                        wmax -= wmaxStageInc;
                     }
-                } else if (wmax >= wmaxStageMax) {
-                    stage++;
-                    wmaxStageMax = args.wmaxInc * pow(10.0f, stage + 1);
+                    synapses->seek(0, SEEK_SET);
+                    analysis::setMaxWeight(cns, synapses, maxWeight);
+                    double expansion = getExpansion(genome, cns, arguments, 1);
+                    if (expansion >= arguments.threshold * 0.9 && arguments.repeats > 1) {
+                        expansion = getExpansion(genome, cns, arguments);
+                    }
+                    if (expansion >= arguments.threshold) {
+                        onset = maxWeight;
+                        found = true;
+                        break;
+                    }
                 }
-                wmaxStageInc = args.wmaxInc * pow(10.0f, stage - 1);
+                if (found) {
+                    if (resolution == 0) {
+                        break;
+                    }
+                    start = onset - pow(10.0f, resolution);
+                    multiplier = 1;
+                    resolution--;
+                } else {
+                    if (maxWeight > arguments.max) {
+                        break;
+                    }
+                    multiplier = 2;
+                    resolution++;
+                }
             }
-            if (!done) {
-                std::cout << agent << " " << std::numeric_limits<double>::infinity() << std::endl;
-            }
+            std::cout << agent << " " << onset << std::endl;
         }
         delete cns;
         delete genome;
@@ -102,157 +239,17 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void printUsage(int argc, char** argv) {
-    std::cerr << "Usage:" << std::endl;
-    std::cerr << "  " << argv[0] << " all RUN STAGE PERTURBATION REPEATS RANDOM QUIESCENT STEPS [AGENT]" << std::endl;
-    std::cerr << "  " << argv[0] << " single RUN STAGE WMAX_MIN WMAX_MAX WMAX_INC PERTURBATION REPEATS RANDOM QUIESCENT STEPS AGENT" << std::endl;
-    std::cerr << "  " << argv[0] << " onset RUN STAGE WMAX_MAX PERTURBATION REPEATS RANDOM QUIESCENT STEPS THRESHOLD [AGENT]" << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "Calculates phase space expansion." << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "  RUN           Run directory" << std::endl;
-    std::cerr << "  STAGE         Life stage (incept, birth, or death)" << std::endl;
-    std::cerr << "  WMAX_MIN      Minimum value of maximum synaptic weight" << std::endl;
-    std::cerr << "  WMAX_MAX      Maximum value of maximum synaptic weight" << std::endl;
-    std::cerr << "  WMAX_INC      Increment for maximum synaptic weight" << std::endl;
-    std::cerr << "  PERTURBATION  Magnitude of perturbation" << std::endl;
-    std::cerr << "  REPEATS       Number of attempts per calculation" << std::endl;
-    std::cerr << "  RANDOM        Number of random timesteps" << std::endl;
-    std::cerr << "  QUIESCENT     Number of quiescent timesteps" << std::endl;
-    std::cerr << "  STEPS         Number of calculation timesteps" << std::endl;
-    std::cerr << "  THRESHOLD     Threshold phase space expansion" << std::endl;
-    std::cerr << "  AGENT         [Starting] agent index" << std::endl;
+double getExpansion(genome::Genome* genome, RqNervousSystem* cns, const Arguments& arguments, int repeats) {
+    return analysis::getExpansion(
+            genome,
+            cns,
+            arguments.perturbation,
+            repeats,
+            arguments.random,
+            arguments.quiescent,
+            arguments.steps);
 }
 
-bool tryParseArgs(int argc, char** argv, Args& args) {
-    if (argc < 2) {
-        return false;
-    }
-    std::string mode;
-    std::string run;
-    std::string stage;
-    float wmaxMin;
-    float wmaxMax;
-    float wmaxInc;
-    double perturbation;
-    int repeats;
-    int random;
-    int quiescent;
-    int steps;
-    double threshold;
-    int agent;
-    try {
-        int argi = 1;
-        mode = std::string(argv[argi++]);
-        if (mode == "all") {
-            if (argc < 9 || argc > 10) {
-                return false;
-            }
-        } else if (mode == "single") {
-            if (argc != 13) {
-                return false;
-            }
-        } else if (mode == "onset") {
-            if (argc < 11 || argc > 12) {
-                return false;
-            }
-        }
-        run = std::string(argv[argi++]);
-        if (!exists(run + "/endStep.txt")) {
-            return false;
-        }
-        stage = std::string(argv[argi++]);
-        if (stage != "incept" && stage != "birth" && stage != "death") {
-            return false;
-        }
-        if (mode == "single") {
-            wmaxMin = atof(argv[argi++]);
-            if (wmaxMin < 0.0f) {
-                return false;
-            }
-            wmaxMax = atof(argv[argi++]);
-            if (wmaxMax <= wmaxMin) {
-                return false;
-            }
-            wmaxInc = atof(argv[argi++]);
-            if (wmaxInc <= 0.0f) {
-                return false;
-            }
-        } else if (mode == "onset") {
-            wmaxMin = 1.0f;
-            wmaxMax = atof(argv[argi++]);
-            if (wmaxMax <= wmaxMin) {
-                return false;
-            }
-            wmaxInc = 1.0f;
-        } else {
-            wmaxMin = 0.0f;
-            wmaxMax = 0.0f;
-            wmaxInc = 0.0f;
-        }
-        perturbation = atof(argv[argi++]);
-        if (perturbation <= 0.0) {
-            return false;
-        }
-        repeats = atoi(argv[argi++]);
-        if (repeats < 1) {
-            return false;
-        }
-        random = atoi(argv[argi++]);
-        if (random < 0) {
-            return false;
-        }
-        quiescent = atoi(argv[argi++]);
-        if (quiescent < 0) {
-            return false;
-        }
-        steps = atoi(argv[argi++]);
-        if (steps < 1) {
-            return false;
-        }
-        if (mode == "onset") {
-            threshold = atof(argv[argi++]);
-        } else {
-            threshold = 0.0;
-        }
-        if (mode == "single" || argc > argi) {
-            agent = atoi(argv[argi++]);
-            if (agent < 1) {
-                return false;
-            }
-        } else {
-            agent = 1;
-        }
-    } catch (...) {
-        return false;
-    }
-    args.mode = mode;
-    args.run = run;
-    args.stage = stage;
-    args.wmaxMin = wmaxMin;
-    args.wmaxMax = wmaxMax;
-    args.wmaxInc = wmaxInc;
-    args.perturbation = perturbation;
-    args.repeats = repeats;
-    args.random = random;
-    args.quiescent = quiescent;
-    args.steps = steps;
-    args.threshold = threshold;
-    args.agent = agent;
-    return true;
-}
-
-void printArgs(const Args& args) {
-    std::cout << "# stage = " << args.stage << std::endl;
-    if (args.mode == "onset") {
-        std::cout << "# wmax_max = " << args.wmaxMax << std::endl;
-    }
-    std::cout << "# perturbation = " << args.perturbation << std::endl;
-    std::cout << "# repeats = " << args.repeats << std::endl;
-    std::cout << "# random = " << args.random << std::endl;
-    std::cout << "# quiescent = " << args.quiescent << std::endl;
-    std::cout << "# steps = " << args.steps << std::endl;
-    if (args.mode == "onset") {
-        std::cout << "# threshold = " << args.threshold << std::endl;
-    }
+double getExpansion(genome::Genome* genome, RqNervousSystem* cns, const Arguments& arguments) {
+    return getExpansion(genome, cns, arguments, arguments.repeats);
 }

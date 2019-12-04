@@ -1,6 +1,6 @@
 include Makefile.conf
 
-targets=library app qtrenderer rancheck PwMoviePlayer proputil pmvutil qt_clust passive nullevo neurons expansion bifurcation genetics timeseries
+targets=library app qtrenderer rancheck PwMoviePlayer proputil pmvutil qt_clust genetics passive expansion bifurcation timeseries
 
 .PHONY: ${targets} clean
 
@@ -34,23 +34,17 @@ omp_test:
 	+ make -C src/tools/omp_test
 	bin/omp_test
 
+genetics:
+	+ make -C src/tools/genetics
+
 passive:
 	+ make -C src/tools/passive
-
-nullevo:
-	+ make -C src/tools/nullevo
-
-neurons:
-	+ make -C src/tools/neurons
 
 expansion:
 	+ make -C src/tools/expansion
 
 bifurcation:
 	+ make -C src/tools/bifurcation
-
-genetics:
-	+ make -C src/tools/genetics
 
 timeseries:
 	+ make -C src/tools/timeseries
