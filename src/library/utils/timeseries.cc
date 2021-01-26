@@ -3,10 +3,13 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <string>
 
 #include "brain/Brain.h"
 #include "brain/NeuronModel.h"
 #include "brain/RqNervousSystem.h"
+#include "sim/globals.h"
+#include "utils/AbstractFile.h"
 #include "utils/misc.h"
 
 void timeseries::writeHeader(std::ostream& out, int agent, RqNervousSystem* cns) {
@@ -54,7 +57,51 @@ void timeseries::writeSynapses(std::ostream& out, RqNervousSystem* cns) {
     out << "# END SYNAPSES" << std::endl;
 }
 
-void timeseries::writeTimeSeries(std::ostream& out, RqNervousSystem* cns, int transient, int steps) {
+void timeseries::writeInVivo(std::ostream& out, const std::string& run, int agent) {
+    std::string path = run + "/brain/function/brainFunction_" + std::to_string(agent) + ".txt";
+    if (!AbstractFile::exists(globals::recordFileType, path.c_str())) {
+        path = run + "/brain/function/incomplete_brainFunction_" + std::to_string(agent) + ".txt";
+    }
+    AbstractFile* file = AbstractFile::open(globals::recordFileType, path.c_str(), "r");
+    int rc;
+    int version;
+    rc = file->scanf("version %d", &version);
+    assert(rc == 1);
+    assert(version == 1);
+    long _agent;
+    int numNeurons;
+    rc = file->scanf("brainFunction %ld %d", &_agent, &numNeurons);
+    assert(rc == 2);
+    assert(_agent == agent);
+    out << "# BEGIN TIME SERIES" << std::endl;
+    while (true) {
+        bool done = false;
+        for (int neuron = 0; neuron < numNeurons; neuron++) {
+            int _neuron;
+            double activation;
+            rc = file->scanf("%d %lf", &_neuron, &activation);
+            if (rc <= 0) {
+                assert(neuron == 0);
+                done = true;
+                break;
+            }
+            assert(rc == 2);
+            assert(_neuron == neuron);
+            if (neuron > 0) {
+                out << " ";
+            }
+            out << activation;
+        }
+        if (done) {
+            break;
+        }
+        out << std::endl;
+    }
+    out << "# END TIME SERIES" << std::endl;
+    delete file;
+}
+
+void timeseries::writeInVitro(std::ostream& out, RqNervousSystem* cns, int transient, int steps) {
     cns->getBrain()->randomizeActivations();
     for (int step = 1; step <= transient; step++) {
         cns->update(false);

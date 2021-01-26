@@ -2155,10 +2155,11 @@ void Logs::TimeSeriesLog::init( TSimulation *sim, Document *doc )
 		transient = prop.get( "Transient" );
 		steps = prop.get( "Steps" );
 		out << "# BEGIN ARGUMENTS" << endl;
-		out << "stage = " << stage << endl;
-		out << "repeats = " << repeats << endl;
-		out << "transient = " << transient << endl;
-		out << "steps = " << steps << endl;
+		out << "# mode = in-vivo" << endl;
+		out << "# stage = " << stage << endl;
+		out << "# repeats = " << repeats << endl;
+		out << "# transient = " << transient << endl;
+		out << "# steps = " << steps << endl;
 		out << "# END ARGUMENTS" << endl;
 	}
 }
@@ -2200,12 +2201,12 @@ void Logs::TimeSeriesLog::writeTimeSeries( agent *a )
 		timeseries::writeHeader( out, a->Number(), cns );
 		timeseries::writeNerves( out, cns );
 		timeseries::writeSynapses( out, cns );
-		out << "# BEGIN ENSEMBLE" << endl;
+		out << "# BEGIN TIME SERIES ENSEMBLE" << endl;
 		for( int index = 0; index < repeats; index++ )
 		{
-			timeseries::writeTimeSeries( out, cns, transient, steps );
+			timeseries::writeInVitro( out, cns, transient, steps );
 		}
-		out << "# END ENSEMBLE" << endl;
+		out << "# END TIME SERIES ENSEMBLE" << endl;
 	}
 	delete cns;
 }

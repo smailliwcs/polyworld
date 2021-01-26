@@ -278,7 +278,7 @@ class BaseNeuronModel : public NeuronModel
 		for( long i = 0; i < dims->numSynapses; i++ )
 		{
 			T_synapse &s = newsynapse[i];
-			int rc = file->scanf( "%hd %hd %g %g", &s.fromneuron, &s.toneuron, &s.efficacy, &s.lrate );
+			int rc = file->scanf( "%hd %hd %f %f", &s.fromneuron, &s.toneuron, &s.efficacy, &s.lrate );
 			assert( rc == 4 );
 		}
 		setSynapses( newsynapse );

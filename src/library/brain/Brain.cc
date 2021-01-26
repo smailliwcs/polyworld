@@ -236,7 +236,7 @@ void Brain::loadSynapses( AbstractFile *file, float maxWeight )
 	int numNeurons;
 	int numInputNeurons;
 	int numOutputNeurons;
-	int rc = file->scanf( "synapses %ld maxweight=%g numsynapses=%ld numneurons=%d numinputneurons=%d numoutputneurons=%d\n",
+	int rc = file->scanf( "synapses %ld maxweight=%f numsynapses=%ld numneurons=%d numinputneurons=%d numoutputneurons=%d\n",
 						  &index, &fileMaxWeight, &numSynapses, &numNeurons, &numInputNeurons, &numOutputNeurons );
 	assert( rc == 6 );
 	assert( numSynapses == _dims.numSynapses );

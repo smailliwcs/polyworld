@@ -10,6 +10,7 @@
 struct Arguments {
     std::vector<std::string> args;
     bool help;
+    std::string mode;
     std::string run;
     std::string stage;
     int repeats;
@@ -29,9 +30,13 @@ Arguments::Arguments(int argc, char** argv) :
 
 std::string Arguments::usage() {
     std::ostringstream out;
-    out << "Usage: " << args[0] << " RUN STAGE REPEATS TRANSIENT STEPS" << std::endl;
+    out << "Usage:" << std::endl;
+    out << "  " << args[0] << " in-vivo RUN" << std::endl;
+    out << "  " << args[0] << " in-vitro RUN STAGE REPEATS TRANSIENT STEPS" << std::endl;
     out << std::endl;
-    out << "Generate neural activation time series using random inputs." << std::endl;
+    out << "Generate neural activation time series." << std::endl;
+    out << "  in-vivo   Report time series read from brain function files." << std::endl;
+    out << "  in-vitro  Report time series generated using random inputs." << std::endl;
     out << std::endl;
     out << "  RUN        Run directory" << std::endl;
     out << "  STAGE      Life stage (incept, birth, or death)" << std::endl;
@@ -65,11 +70,16 @@ bool Arguments::parse() {
     } \
     argi++; \
 }
+        PARSE(mode, , mode == "in-vivo" || mode == "in-vitro", "Invalid mode")
         PARSE(run, , exists(run + "/endStep.txt"), "Not a Polyworld run")
-        PARSE(stage, , stage == "incept" || stage == "birth" || stage == "death", "Invalid life stage")
-        PARSE(repeats, std::stoi, repeats >= 1, "Invalid number of time series")
-        PARSE(transient, std::stoi, transient >= 0, "Invalid number of ignored timesteps")
-        PARSE(steps, std::stoi, steps >= 1, "Invalid number of reporting timesteps")
+        if (mode == "in-vivo") {
+            stage = "birth";
+        } else if (mode == "in-vitro") {
+            PARSE(stage, , stage == "incept" || stage == "birth" || stage == "death", "Invalid life stage")
+            PARSE(repeats, std::stoi, repeats >= 1, "Invalid number of time series")
+            PARSE(transient, std::stoi, transient >= 0, "Invalid number of ignored timesteps")
+            PARSE(steps, std::stoi, steps >= 1, "Invalid number of reporting timesteps")
+        }
 #undef PARSE
     } catch (...) {
         fail(argi, "Invalid argument");
@@ -87,10 +97,13 @@ void Arguments::fail(int argi, const std::string& message) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Arguments& arguments) {
-    out << "# STAGE = " << arguments.stage << std::endl;
-    out << "# REPEATS = " << arguments.repeats << std::endl;
-    out << "# TRANSIENT = " << arguments.transient << std::endl;
-    out << "# STEPS = " << arguments.steps << std::endl;
+    out << "# mode = " << arguments.mode << std::endl;
+    if (arguments.mode == "in-vitro") {
+        out << "# stage = " << arguments.stage << std::endl;
+        out << "# repeats = " << arguments.repeats << std::endl;
+        out << "# transient = " << arguments.transient << std::endl;
+        out << "# steps = " << arguments.steps << std::endl;
+    }
     return out;
 }
 
@@ -117,11 +130,15 @@ int main(int argc, char** argv) {
         timeseries::writeHeader(std::cout, agent, cns);
         timeseries::writeNerves(std::cout, cns);
         timeseries::writeSynapses(std::cout, cns);
-        std::cout << "# BEGIN ENSEMBLE" << std::endl;
-        for (int index = 0; index < arguments.repeats; index++) {
-            timeseries::writeTimeSeries(std::cout, cns, arguments.transient, arguments.steps);
+        std::cout << "# BEGIN TIME SERIES ENSEMBLE" << std::endl;
+        if (arguments.mode == "in-vivo") {
+            timeseries::writeInVivo(std::cout, arguments.run, agent);
+        } else if (arguments.mode == "in-vitro") {
+            for (int index = 0; index < arguments.repeats; index++) {
+                timeseries::writeInVitro(std::cout, cns, arguments.transient, arguments.steps);
+            }
         }
-        std::cout << "# END ENSEMBLE" << std::endl;
+        std::cout << "# END TIME SERIES ENSEMBLE" << std::endl;
         delete cns;
     }
     return 0;
