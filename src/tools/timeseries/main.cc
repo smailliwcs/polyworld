@@ -97,12 +97,12 @@ void Arguments::fail(int argi, const std::string& message) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Arguments& arguments) {
-    out << "# mode = " << arguments.mode << std::endl;
+    out << "# MODE = " << arguments.mode << std::endl;
     if (arguments.mode == "in-vitro") {
-        out << "# stage = " << arguments.stage << std::endl;
-        out << "# repeats = " << arguments.repeats << std::endl;
-        out << "# transient = " << arguments.transient << std::endl;
-        out << "# steps = " << arguments.steps << std::endl;
+        out << "# STAGE = " << arguments.stage << std::endl;
+        out << "# REPEATS = " << arguments.repeats << std::endl;
+        out << "# TRANSIENT = " << arguments.transient << std::endl;
+        out << "# STEPS = " << arguments.steps << std::endl;
     }
     return out;
 }

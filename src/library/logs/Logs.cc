@@ -2155,11 +2155,11 @@ void Logs::TimeSeriesLog::init( TSimulation *sim, Document *doc )
 		transient = prop.get( "Transient" );
 		steps = prop.get( "Steps" );
 		out << "# BEGIN ARGUMENTS" << endl;
-		out << "# mode = in-vivo" << endl;
-		out << "# stage = " << stage << endl;
-		out << "# repeats = " << repeats << endl;
-		out << "# transient = " << transient << endl;
-		out << "# steps = " << steps << endl;
+		out << "# MODE = in-vitro" << endl;
+		out << "# STAGE = " << stage << endl;
+		out << "# REPEATS = " << repeats << endl;
+		out << "# TRANSIENT = " << transient << endl;
+		out << "# STEPS = " << steps << endl;
 		out << "# END ARGUMENTS" << endl;
 	}
 }
